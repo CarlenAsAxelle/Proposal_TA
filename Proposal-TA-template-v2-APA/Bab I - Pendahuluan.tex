@@ -1,0 +1,202 @@
+\cleardoublepage
+
+\chapter{PENDAHULUAN}
+
+\label{chap:pendahuluan}
+
+
+\section{Latar Belakang}
+
+Komputasi awan telah menjadi tumpuan penyelenggaraan sistem informasi perusahaan, dan penggunaannya tidak selalu terpusat pada satu penyedia. Survei terhadap 753 pengambil keputusan dan pengguna awan dalam laporan \textcite{flexera2026} mencatat bahwa 73\% responden mengoperasikan lingkungan hibrida. Temuan tersebut memberi konteks kompleksitas pengelolaan awan, tetapi tidak sama dengan ukuran adopsi beberapa penyedia awan publik. Laporan tahun sebelumnya mencatat rata-rata penggunaan 2,4 awan publik pada responden surveinya \autocite{flexera2025}. Penggunaan beberapa penyedia menghadirkan kebutuhan menyelaraskan model konfigurasi, penamaan \textit{region}, dan antarmuka pemrograman yang berbeda.
+
+Persebaran tersebut berhubungan dengan kewajiban residensi dan transfer data. General Data Protection Regulation (GDPR\label{abbr:gdpr}) melalui Bab V mengatur transfer ke negara ketiga atau organisasi internasional dengan mekanisme kecukupan, jaminan yang sesuai, atau derogasi tertentu; regulasi ini bukan larangan umum penyimpanan di luar Uni Eropa \autocite{edpb2023}. Pasal 56 Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi (UU PDP\label{abbr:uupdp}) menetapkan urutan persyaratan transfer ke luar wilayah hukum Indonesia \autocite[Pasal 56]{uupdp2022}. Sementara itu, PP Nomor 71 Tahun 2019 membedakan kewajiban penempatan bagi penyelenggara lingkup publik dan privat, termasuk pengecualian yang diatur untuk lingkup publik \autocite[Pasal 20--21]{pp712019}. Pada 19 Januari 2026, Mahkamah Konstitusi melalui Putusan Nomor 137/PUU-XXIII/2025 menolak permohonan pengujian norma transfer tersebut untuk seluruhnya \autocite[hlm. 220--222]{mk2026}. Implikasi teknisnya adalah perlunya menyimpan konteks dan bukti yang mendasari aturan, bukan sekadar mencocokkan lokasi dengan daftar negara.
+
+Kegagalan memenuhi ketentuan transfer dapat disertai tindakan korektif yang memengaruhi layanan. Dalam keputusan tanggal 12 Mei 2023 mengenai transfer data Facebook dari Uni Eropa/Wilayah Ekonomi Eropa ke Amerika Serikat, Data Protection Commission menetapkan denda sebesar €1,2 miliar kepada Meta Platforms Ireland serta perintah penghentian transfer dan pemrosesan yang melanggar ketentuan, termasuk penyimpanan \autocite{dpc2023}. Pada konteks keamanan yang lebih luas, ringkasan laporan IBM tahun 2025 menyebut biaya rata-rata global pelanggaran data sebesar USD 4,44 juta; angka ini bukan estimasi biaya khusus pelanggaran residensi \autocite{ibm2025summary}. Dari sisi konfigurasi, lokasi sumber daya utama tidak selalu mewakili lokasi seluruh salinan. Replikasi yang dikonfigurasi serta kebijakan cadangan dapat menambah lokasi penyimpanan; misalnya, Azure SQL Database dan Cloud SQL mempunyai perilaku bawaan cadangan yang perlu diperiksa secara khusus \autocite{b2c_azureSqlBackup,b2c_gcpSqlBackups}.
+
+Sejumlah pendekatan tersedia untuk mengelola konfigurasi tersebut. Kontrol bawaan meliputi AWS\label{abbr:aws} Config dan Service Control Policy, Azure Policy, serta Organization Policy pada Google Cloud. Perangkat Cloud Security Posture Management (CSPM\label{abbr:cspm}) menjadi alternatif pemeriksaan postur, sedangkan paradigma \textit{policy as code} (PaC\label{abbr:pac}) memungkinkan aturan diperlakukan sebagai artefak yang dikelola versinya dan diuji. Open Policy Agent (OPA\label{abbr:opa}) menyediakan evaluasi keputusan, sementara Cloud Custodian menyediakan penyaring dan tindakan untuk sumber daya yang didukung \autocite{b2c_opaOverview,b2c_custodianOverview}. Studi \textcite{foalem2026} terhadap 399 repositori menunjukkan penggunaan beberapa perkakas PaC. OPA mencakup 62\% berkas kebijakan dalam korpus studi, bukan 62\% organisasi pengguna awan.
+
+Meskipun demikian, penerapan pada AWS, Azure, dan GCP\label{abbr:gcp} masih memerlukan integrasi yang mempertahankan perbedaan layanan. Pembatasan \texttt{aws:\allowbreak RequestedRegion} berhubungan dengan titik akhir API dan tidak menjamin seluruh dampak lintas wilayah, sedangkan pembatasan lokasi Google berlaku menurut cakupan sumber daya yang didukung \autocite{b2c_awsRegionCondition,b2c_gcpLocationConstraint}. Studi \textcite{verdet2025} tentang konfigurasi Terraform mendukung kebutuhan pemeriksaan kebijakan eksplisit, tetapi hasil analisis statis tersebut tidak dapat menggantikan pengamatan keadaan layanan yang sedang berjalan. Temuan \textcite{foalem2026} bahwa 85,24\% repositori menggunakan satu perkakas juga tidak membuktikan rendahnya interoperabilitas. Persoalan yang dikaji lebih spesifik: menyelaraskan bukti konfigurasi lintas penyedia, mempertahankan konteks regulasi, dan menghasilkan keputusan yang dapat ditelusuri tanpa menyatakan metadata lokasi sebagai pembuktian kepatuhan hukum menyeluruh.
+
+Kebutuhan tersebut menjadi dasar tugas akhir ini, yaitu merancang dan mengevaluasi kerangka kerja pemeriksaan residensi data yang menggunakan representasi kebijakan bersama, mendeteksi ketidaksesuaian konfigurasi secara berkala, mendukung remediasi pada tindakan yang tersedia, dan menghasilkan bukti pemeriksaan yang tertaut pada ketentuan serta kebijakan operasional.
+
+
+\section{Rumusan Masalah}
+
+Pokok persoalan tugas akhir ini adalah kebutuhan akan mekanisme pemeriksaan yang menyelaraskan konfigurasi lokasi, konteks kebijakan, dan bukti dari beberapa penyedia awan. Kontrol khusus penyedia dan format metadata yang berbeda memerlukan penyesuaian integrasi, sedangkan pemeriksaan manual perlu menelusuri sumber daya utama, replika, serta cadangan secara konsisten. Oleh sebab itu, penelitian berfokus pada keterulangan pemeriksaan dan keterlacakan keputusan pada lingkungan uji, bukan pada klaim bahwa seluruh alternatif yang ada tidak memiliki kemampuan kepatuhan.
+
+Persoalan ini penting karena pengendali mempunyai kewajiban memastikan persyaratan transfer sesuai Pasal 56 UU PDP, sementara PP Nomor 71 Tahun 2019 juga memuat kewajiban penyediaan rekam jejak audit \autocite[Pasal 56]{uupdp2022}\autocite[Pasal 22]{pp712019}. Bukti konfigurasi yang tidak lengkap atau keputusan yang tidak dapat dijelaskan menyulitkan penelaahan. Putusan Mahkamah Konstitusi Nomor 137/PUU-XXIII/2025 menjadi konteks keberlakuan norma transfer yang diuji, bukan dasar untuk menyatakan bahwa semua kewajiban kepatuhan cukup dibuktikan oleh lokasi penyimpanan \autocite{mk2026}.
+
+Solusi yang diusulkan adalah sebuah kerangka kerja kepatuhan residensi data berlapis yang terdiri atas model kebijakan agnostik penyedia, mesin deteksi lintas awan, mekanisme remediasi terotomatisasi, dan lapisan pencatatan bukti audit, yang diimplementasikan secara nyata pada AWS, Azure, dan GCP serta diuji melalui simulasi skenario regional. Efektivitas solusi ini akan dipertanggungjawabkan pada bab evaluasi. Berdasarkan uraian tersebut, rumusan masalah tugas akhir ini adalah sebagai berikut.
+
+\begin{enumerate}
+
+\item Bagaimana model kebijakan residensi data yang agnostik terhadap penyedia awan dapat merepresentasikan ketentuan GDPR, UU Nomor 27 Tahun 2022, dan PP Nomor 71 Tahun 2019 ke dalam aturan yang dapat dieksekusi mesin tanpa kehilangan keterlacakan terhadap pasal asalnya?
+
+\item Bagaimana pelanggaran residensi data dapat dideteksi secara konsisten pada AWS, Azure, dan GCP, mengingat ketiga penyedia memiliki perbedaan model layanan penyimpanan, penamaan \textit{region}, dan kelengkapan metadata lokasi?
+
+\item Seberapa besar peningkatan ketepatan deteksi dan pengurangan waktu deteksi yang dicapai kerangka kerja usulan dibandingkan dengan pemeriksaan kepatuhan secara manual pada lingkungan uji yang sama?
+
+\item Sejauh mana bukti audit yang dihasilkan kerangka kerja memenuhi kebutuhan pembuktian kepatuhan, yaitu dapat ditelusuri ke ketentuan regulasi tertentu, bersifat tidak dapat diubah, dan lengkap secara kronologis?
+
+\end{enumerate}
+
+
+\section{Tujuan}
+
+\label{sec:tujuan}
+
+Tujuan utama tugas akhir ini adalah merancang, mengimplementasikan, dan mengevaluasi sebuah kerangka kerja kepatuhan residensi data yang agnostik terhadap penyedia awan untuk lingkungan \textit{multi-cloud}. Secara lebih rinci, tujuan yang ingin dicapai adalah sebagai berikut.
+
+\begin{enumerate}
+
+\item Merumuskan model kebijakan residensi data yang dapat menyatakan ketentuan GDPR, UU Nomor 27 Tahun 2022, dan PP Nomor 71 Tahun 2019 sebagai aturan yang dapat dieksekusi mesin, lengkap dengan tautan ke pasal asalnya.
+
+\item Merancang arsitektur kerangka kerja yang terdiri atas lapisan klasifikasi dan pelabelan data, mesin kebijakan, mesin deteksi, mesin remediasi, serta lapisan audit dan pelaporan.
+
+\item Mengimplementasikan mesin deteksi yang mampu memetakan lokasi penyimpanan data pada layanan penyimpanan objek dan basis data terkelola di AWS, Azure, dan GCP melalui antarmuka pemrograman masing-masing penyedia.
+
+\item Mengimplementasikan mekanisme remediasi terotomatisasi beserta lapisan pencatatan bukti audit yang bersifat tidak dapat diubah.
+
+\item Mengevaluasi kerangka kerja melalui skenario uji yang mencakup pelanggaran nyata pada lingkungan \textit{multi-cloud} dan pelanggaran tersimulasi pada skenario lintas \textit{region}.
+
+\end{enumerate}
+
+Tugas akhir ini dinyatakan berhasil apabila memenuhi kriteria keberhasilan berikut.
+
+\begin{enumerate}[label=\alph*.]
+
+\item Kerangka kerja berhasil dipasang dan dijalankan pada tiga penyedia awan (AWS, Azure, dan GCP) menggunakan satu berkas kebijakan yang sama tanpa penulisan ulang aturan per penyedia.
+
+\item Mesin deteksi mencapai nilai presisi dan \textit{recall} paling sedikit 95\% terhadap himpunan kasus uji berlabel yang telah disiapkan, dengan tingkat kesalahan negatif (pelanggaran yang tidak terdeteksi) paling banyak 5\%.
+
+\item Waktu deteksi satu siklus pemindaian penuh pada lingkungan uji tidak melebihi 10 menit dan terbukti lebih singkat secara signifikan dibandingkan pemeriksaan manual atas lingkungan yang sama.
+
+\item Mekanisme remediasi terotomatisasi berhasil menyelesaikan paling sedikit 90\% pelanggaran pada skenario uji yang termasuk kategori dapat diremediasi secara otomatis.
+
+\item Laporan bukti audit yang dihasilkan memuat seluruh unsur pada daftar periksa bukti yang disusun pada Bab III, dan setiap temuan dapat ditelusuri ke ketentuan regulasi yang dilanggar.
+
+\end{enumerate}
+
+
+\section{Ruang Lingkup, Asumsi, dan Batasan Masalah}
+
+Ruang lingkup tugas akhir ini dibatasi pada residensi data di lapisan penyimpanan, yaitu layanan penyimpanan objek dan basis data terkelola pada tiga penyedia awan publik: Amazon Web Services, Microsoft Azure, dan Google Cloud Platform. Regulasi yang dicakup dibatasi pada tiga instrumen yang diringkas pada Tabel \ref{tab:residensi} yang dipilih karena mewakili tiga pola pengaturan residensi yang berbeda, yakni pembatasan transfer berbasis kecukupan pelindungan, pembatasan berbasis mekanisme berlapis, dan kewajiban penempatan dengan pengecualian yang ditentukan regulasi.
+
+{\small
+
+\begin{longtable}{|p{0.20\textwidth}|p{0.34\textwidth}|p{0.33\textwidth}|}
+
+\caption{Ringkasan ketentuan residensi data yang menjadi lingkup tugas akhir}\label{tab:residensi}\\
+
+\hline
+
+\textbf{Regulasi} & \textbf{Ketentuan Utama Terkait Residensi Data} & \textbf{Bentuk Representasi dalam Kerangka Kerja} \\ \hline
+
+\endfirsthead
+\hline
+\textbf{Regulasi} & \textbf{Ketentuan Utama Terkait Residensi Data} & \textbf{Bentuk Representasi dalam Kerangka Kerja} \\ \hline \endhead
+
+GDPR (Uni Eropa) & Bab V mensyaratkan bahwa transfer data pribadi ke negara ketiga hanya boleh dilakukan jika terdapat keputusan kecukupan, jaminan yang memadai, atau derogasi tertentu. & Kebijakan operasional lokasi untuk skenario yang termasuk cakupan GDPR, dengan konteks penerima dan rujukan bukti dasar transfer; bukan larangan umum transfer ke luar Uni Eropa. \\ \hline
+
+UU Nomor 27 Tahun 2022 (Indonesia) & Pasal 56 menetapkan urutan: memastikan tingkat pelindungan setara atau lebih tinggi; jika tidak terpenuhi, memastikan pelindungan memadai dan mengikat; jika keduanya tidak terpenuhi, memperoleh persetujuan subjek data. & Konteks dasar transfer dan rujukan bukti yang telah diverifikasi; bukti yang belum tersedia dinyatakan memerlukan verifikasi, bukan otomatis dianggap valid. \\ \hline
+
+PP Nomor 71 Tahun 2019 (Indonesia) & Pasal 20 mengatur penempatan di Indonesia bagi lingkup publik beserta pengecualian teknologi penyimpanan yang tidak tersedia di dalam negeri; Pasal 21 mengatur lingkup privat secara berbeda. & Kebijakan lokasi untuk jenis penyelenggara dan skenario yang sesuai; pengecualian membutuhkan rujukan persetujuan yang sah, bukan diputuskan otomatis oleh perangkat lunak. \\ \hline
+
+\end{longtable}
+
+}
+
+Asumsi yang digunakan dalam pelaksanaan tugas akhir ini adalah sebagai berikut.
+
+\begin{enumerate}
+
+\item Metadata lokasi yang dikembalikan antarmuka penyedia digunakan sebagai bukti konfigurasi menurut penyedia, bukan verifikasi independen atas lokasi fisik seluruh salinan data. Ketidaktersediaan metadata dicatat sebagai keterbatasan pengamatan.
+
+\item Lingkungan uji dibangun berskala terbatas pada ketiga penyedia dengan satu \textit{region} aktif per penyedia, memanfaatkan kredit atau tingkat gratis jika tersedia dan sesuai layanan. Skenario lintas \textit{region} dapat direpresentasikan melalui lokasi logis. Hasil simulasi menilai konsistensi keputusan aturan, bukan membuktikan perpindahan fisik atau keberhasilan remediasi lintas negara.
+
+\item Seluruh data yang digunakan pada lingkungan uji adalah data sintetis yang dibangkitkan khusus untuk pengujian sehingga tidak ada data pribadi nyata yang diproses.
+
+\item Klasifikasi awal data, yaitu penetapan kategori data dan yurisdiksi subjek data, dianggap telah tersedia sebagai masukan bagi kerangka kerja.
+
+\end{enumerate}
+
+Batasan masalah tugas akhir ini adalah sebagai berikut.
+
+\begin{enumerate}
+
+\item Tugas akhir ini tidak mencakup residensi data pada lapisan komputasi, jaringan, maupun jaringan pengiriman konten, dan tidak membahas residensi kunci kriptografis pada layanan manajemen kunci.
+
+\item Tugas akhir ini tidak melakukan interpretasi hukum atas ketentuan regulasi. Pemetaan pasal ke aturan mesin disusun berdasarkan rumusan normatif yang tertulis dan akan diverifikasi melalui penelaahan literatur, bukan melalui penafsiran yuridis mandiri.
+
+\item Kerangka kerja diuji pada lingkungan laboratorium berskala terbatas dan tidak diterapkan pada lingkungan produksi organisasi mana pun.
+
+\item Evaluasi kinerja dibatasi pada ketepatan deteksi, waktu deteksi, dan tingkat keberhasilan remediasi. Analisis biaya operasional penerapan pada skala perusahaan berada di luar cakupan.
+
+\end{enumerate}
+
+
+\section{Hipotesis Tugas Akhir}
+
+Hipotesis tugas akhir ini diturunkan dari premis-premis berikut. Angka sasaran merupakan target penelitian yang masih harus diuji, bukan hasil implementasi atau jaminan yang diturunkan dari literatur.
+
+\begin{enumerate}
+
+\item Setiap penyedia awan besar menyediakan antarmuka pemrograman yang mengembalikan metadata lokasi sumber daya penyimpanan sehingga lokasi data pada ketiga penyedia dapat dinormalisasi ke dalam satu representasi bersama.
+
+\item Sebagian pemeriksaan teknis yang diturunkan dari ketentuan dapat dinyatakan secara deklaratif apabila cakupan, kategori penyelenggara, konteks transfer, pengecualian, dan bukti pendukung ditetapkan terlebih dahulu. Aturan lokasi tidak merepresentasikan seluruh kewajiban hukum.
+
+\item Paradigma \textit{policy as code} telah terbukti digunakan secara luas untuk tata kelola kepatuhan pada perangkat lunak sumber terbuka \autocite{foalem2026} sehingga mesin kebijakan deklaratif merupakan fondasi yang layak bagi penegakan aturan residensi.
+
+\item Pemeriksaan kepatuhan secara manual bersifat lambat dan rawan kekeliruan karena bergantung pada penelusuran konsol tiap penyedia satu per satu, sedangkan pemindaian terprogram dapat dijalankan secara berulang dengan prosedur yang identik.
+
+\end{enumerate}
+
+Berdasarkan premis-premis tersebut, hipotesis kerja tugas akhir ini dirumuskan sebagai berikut: penerapan kerangka kerja kepatuhan residensi data berbasis kebijakan deklaratif yang agnostik terhadap penyedia awan dapat mendeteksi pelanggaran residensi data pada AWS, Azure, dan GCP dengan presisi dan \textit{recall} paling sedikit 95\%, memangkas waktu deteksi paling sedikit 80\% dibandingkan pemeriksaan manual atas lingkungan yang sama, serta meremediasi secara otomatis paling sedikit 90\% pelanggaran yang termasuk kategori dapat diremediasi.
+
+Untuk keperluan pengujian statistik pada tahap evaluasi, perbandingan waktu deteksi antara kerangka kerja usulan dan pemeriksaan manual dinyatakan dalam pasangan hipotesis berikut.
+
+\noindent $H_0$: Tidak terdapat perbedaan rata-rata waktu deteksi yang signifikan antara pemeriksaan kepatuhan residensi menggunakan kerangka kerja usulan dan pemeriksaan manual ($\mu_{\mathrm{framework}} = \mu_{\mathrm{manual}}$).
+
+\noindent $H_1$: Pemeriksaan kepatuhan residensi menggunakan kerangka kerja usulan menghasilkan rata-rata waktu deteksi yang lebih singkat secara signifikan dibandingkan pemeriksaan manual ($\mu_{\mathrm{framework}} < \mu_{\mathrm{manual}}$).
+
+
+\section{Metodologi}
+
+\label{sec:metodologi}
+
+Tugas akhir ini menggunakan pendekatan \textit{Design Science Research Methodology} (DSRM\label{abbr:dsrm}) sebagaimana dirumuskan \textcite{peffers2007}, yang berakar pada kerangka penelitian ilmu desain untuk sistem informasi \autocite{hevner2004}. Pendekatan ini dipilih karena keluaran utama tugas akhir berupa artefak rancang bangun, yaitu kerangka kerja perangkat lunak, yang harus dinilai berdasarkan kemampuannya menyelesaikan masalah nyata. Enam tahapan DSRM diterjemahkan ke dalam langkah-langkah berikut.
+
+\begin{enumerate}
+
+\item Identifikasi masalah dan motivasi. Melakukan investigasi terhadap praktik pengelolaan residensi data pada lingkungan \textit{multi-cloud} melalui penelaahan laporan industri, dokumentasi kontrol bawaan penyedia awan, serta kajian regulasi GDPR, UU Nomor 27 Tahun 2022, dan PP Nomor 71 Tahun 2019. Tahap ini menghasilkan pernyataan masalah yang menjadi dasar Bab I.
+
+\item Penetapan tujuan solusi. Menurunkan kebutuhan fungsional dan nonfungsional kerangka kerja dari hasil identifikasi masalah, kemudian menetapkan kriteria keberhasilan yang terukur sebagaimana tercantum pada Subbab \ref{sec:tujuan}. Penelusuran literatur dilakukan secara sistematis pada basis data ilmiah menggunakan kata kunci \textit{data residency}, \textit{multi-cloud compliance}, \textit{policy as code}, dan \textit{cloud security posture management}, dengan penapisan berdasarkan relevansi dan tahun terbit. Hasilnya dijabarkan pada Bab II.
+
+\item Perancangan dan pengembangan. Menyusun taksonomi klasifikasi data dan pemetaan pasal regulasi ke aturan mesin, merancang arsitektur kerangka kerja dengan abstraksi bertahap dari generik ke spesifik menggunakan pendekatan \textit{C4 model}, kemudian mengimplementasikan mesin kebijakan, mesin deteksi lintas penyedia, mesin remediasi, dan lapisan audit.
+
+\item Demonstrasi. Menyiapkan lingkungan uji pada akun tingkat gratis AWS, Azure, dan GCP, menanamkan data sintetis, kemudian menjalankan kerangka kerja pada skenario pelanggaran nyata maupun skenario lintas \textit{region} tersimulasi.
+
+\item Evaluasi. Mengukur ketepatan deteksi menggunakan presisi, \textit{recall}, dan \textit{F1-score} terhadap himpunan kasus uji berlabel; mengukur waktu deteksi dan membandingkannya dengan pemeriksaan manual menggunakan uji statistik yang sesuai; serta mengukur tingkat keberhasilan remediasi dan kelengkapan bukti audit terhadap daftar periksa yang disusun pada Bab III.
+
+\item Komunikasi. Menyusun dokumentasi teknis, panduan implementasi, laporan tugas akhir, dan repositori kode sumber terbuka sebagai luaran akhir.
+
+\end{enumerate}
+
+
+\section{Sistematika Penulisan}
+
+Proposal tugas akhir ini disusun dengan sistematika sebagai berikut.
+
+\begin{enumerate}
+
+\item Bab I Pendahuluan berisi latar belakang, rumusan masalah, tujuan dan kriteria keberhasilan, ruang lingkup beserta asumsi dan batasan masalah, hipotesis, metodologi, serta sistematika penulisan.
+
+\item Bab II Studi Literatur berisi kajian tentang konsep residensi dan kedaulatan data, ketentuan regulasi yang menjadi lingkup tugas akhir, karakteristik arsitektur \textit{multi-cloud}, paradigma \textit{policy as code} beserta mesin kebijakannya, serta tinjauan terhadap penelitian dan solusi terdahulu yang relevan.
+
+\item Bab III Analisis Masalah berisi analisis kondisi pengelolaan residensi data saat ini, analisis kebutuhan fungsional dan nonfungsional kerangka kerja, serta analisis pemilihan solusi dari beberapa alternatif rancangan.
+
+\item Bab IV Desain Konsep Solusi berisi model konseptual kerangka kerja yang diusulkan dan penjelasan ringkas mengenai perbedaannya dengan kondisi pengelolaan residensi data saat ini.
+
+\item Bab V Rencana Selanjutnya berisi rencana implementasi kerangka kerja, kebutuhan lingkungan dan alat bantu, desain pengujian dan evaluasi, serta analisis risiko dan mitigasinya.
+
+\end{enumerate}

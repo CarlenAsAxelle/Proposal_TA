@@ -1,0 +1,255 @@
+\cleardoublepage
+\chapter{STUDI LITERATUR}
+\setlength{\emergencystretch}{1.5em}
+\label{chap:studi-literatur}
+
+Bab ini membahas landasan konseptual dan teknis untuk pemeriksaan kepatuhan residensi data pada lingkungan \textit{multi-cloud}. Pembahasan dimulai dari karakteristik kasus, dilanjutkan dengan konsep lokasi dan yurisdiksi data, ketentuan regulasi, kemampuan layanan penyedia awan, serta mekanisme kebijakan dan audit. Bagian akhir menyintesis penelitian dan solusi terkait untuk memperjelas persoalan yang masih perlu dijawab. Pemilihan teknologi dan rancangan terperinci tidak ditetapkan dalam bab ini, tetapi menjadi bahan analisis pada bab berikutnya.
+
+\section{Residensi Data pada Lingkungan Multi-Cloud}
+\label{sec:kasus-multicloud}
+\subsection{Karakteristik Lingkungan dan Objek Kajian}
+Menurut \textcite{nist2011}, komputasi awan memungkinkan akses jaringan sesuai kebutuhan terhadap sekumpulan sumber daya yang dapat dikonfigurasi dan disediakan dengan interaksi pengelolaan yang minimal. Karakteristik penggabungan sumber daya memungkinkan pengguna menentukan lokasi pada tingkat abstraksi tertentu, seperti negara atau pusat data, tetapi tidak selalu mengetahui lokasi fisik persis infrastruktur. Dengan demikian, keputusan penempatan yang tampak sederhana bagi pengguna bergantung pada abstraksi layanan penyedia.
+
+Dalam tugas akhir ini, istilah \textit{multi-cloud} digunakan secara operasional untuk menyebut penggunaan layanan dari lebih dari satu penyedia awan publik. Istilah ini dibedakan dari \textit{hybrid cloud}, yang dalam taksonomi NIST merupakan gabungan infrastruktur awan berbeda yang tetap menjadi entitas tersendiri dan dihubungkan untuk memungkinkan portabilitas data atau aplikasi \autocite{nist2011}. Keduanya dapat bertumpang tindih, tetapi persentase penggunaan lingkungan hibrida tidak boleh diperlakukan sebagai persentase penggunaan beberapa penyedia awan publik. Survei \textcite{flexera2026} menjadi konteks industri, bukan bukti langsung tentang jumlah pelanggaran residensi data.
+
+Objek kajian dibatasi pada penyimpanan objek dan basis data terkelola sebagaimana ditetapkan pada Bab~\ref{chap:pendahuluan}. Pemeriksaan perlu memperhatikan sumber daya utama beserta konfigurasi salinan yang dapat diamati. Sebagai contoh konseptual, sebuah basis data utama yang berada pada lokasi yang diizinkan masih memerlukan pemeriksaan atas lokasi replika dan cadangannya. Contoh tersebut adalah ilustrasi kebutuhan pemeriksaan, bukan laporan kejadian pada organisasi tertentu. Perincian kemampuan masing-masing layanan dibahas pada Subbab~\ref{sec:layanan-cloud}.
+
+\subsection{Batas antara Konfigurasi dan Pembuktian Lokasi}
+Kajian ini membedakan tiga jenis informasi: konfigurasi lokasi yang dilaporkan penyedia, klasifikasi dan bukti administratif yang diberikan pengelola, serta keputusan pemeriksaan yang dihasilkan aturan. Ketiganya tidak dapat saling menggantikan. Nilai \textit{region} merupakan informasi teknis; dasar transfer merupakan konteks hukum dan administratif; sedangkan keputusan pemeriksaan merupakan hasil penerapan aturan terhadap keduanya. Pembedaan ini digunakan sebagai kerangka analisis dalam bab ini.
+
+Secara khusus, pengujian dengan label lokasi logis hanya dapat menilai konsistensi aturan terhadap skenario yang disiapkan. Hasil tersebut tidak membuktikan terjadinya perpindahan fisik data, kelengkapan seluruh lokasi penyimpanan penyedia, ataupun keabsahan dokumen dasar transfer. Karena itu, hasil evaluasi nantinya perlu memisahkan temuan dari lingkungan nyata, kasus tersimulasi, dan informasi yang belum dapat diverifikasi. Pemisahan ini merupakan batas validitas rancangan eksperimen tugas akhir, bukan klaim kemampuan suatu produk.
+
+\section{Residensi, Kedaulatan, Lokalisasi, dan Transfer Data}
+\label{sec:konsep-residensi}
+\subsection{Perbedaan Konsep dan Implikasinya}
+Residensi data berhubungan dengan lokasi geografis penyimpanan atau pemrosesan data. Dokumentasi Microsoft menggunakan pengertian tersebut dan membedakan data yang disimpan secara persisten dari data yang sedang diproses atau dipindahkan. Dokumentasi itu berlaku untuk Microsoft 365; di sini rujukan tersebut hanya digunakan untuk memperjelas istilah, bukan untuk menyimpulkan jaminan residensi layanan AWS, Azure, atau GCP \autocite{msresidency2026}.
+
+Istilah kedaulatan data dalam pembahasan ini digunakan untuk menyoroti dimensi kewenangan hukum dan pengendalian atas data, sedangkan residensi digunakan untuk dimensi lokasinya. Pembedaan operasional ini mencegah kesimpulan bahwa keberadaan data pada suatu negara dengan sendirinya menyelesaikan seluruh kewajiban pengendalian, akses, dan pelindungan. Dokumentasi Microsoft menempatkan lokasi, kewajiban regulasi, serta kebijakan organisasi sebagai pertimbangan yang saling terkait, bukan sebagai satu atribut yang identik \autocite{msresidency2026}.
+
+Lokalisasi data menekankan persyaratan penempatan atau pemrosesan di wilayah tertentu. \textcite{oecd2023} menunjukkan bahwa definisinya tidak tunggal dan membedakan kewajiban penyimpanan lokal yang masih mengizinkan salinan di luar negeri, penyimpanan lokal dengan persyaratan transfer, serta kewajiban yang juga membatasi aliran data. Perbedaan ini penting karena aturan ``harus memiliki salinan lokal'' tidak setara dengan aturan ``semua salinan harus berada di dalam negeri''. Dalam konteks rekayasa, keduanya memerlukan predikat pemeriksaan yang berbeda.
+
+Transfer lintas negara juga tidak dapat disamakan dengan pelanggaran. Sebagaimana dijelaskan pada Subbab~\ref{sec:regulasi-residensi}, GDPR dan UU PDP menyediakan mekanisme transfer bersyarat. Oleh sebab itu, pemeriksaan lokasi dapat menandai konfigurasi untuk ditinjau, tetapi penetapan kepatuhan memerlukan konteks penerapan regulasi, jenis data, dan bukti pendukung yang sesuai.
+
+\subsection{Representasi Pengetahuan dan Ketidakpastian}
+Untuk keperluan analisis, suatu objek pemeriksaan dapat dipandang sebagai pasangan informasi lokasi dan konteks kebijakan. Lokasi dapat berisi satu wilayah, beberapa wilayah, atau nilai yang belum diketahui. Konteks dapat meliputi kategori data, jenis penyelenggara, tujuan pemrosesan, dasar transfer, serta rujukan dokumen yang diperiksa. Daftar ini merupakan sintesis kebutuhan informasi tugas akhir dan bukan standar hukum baru.
+
+Ketiadaan nilai tidak sebaiknya disamakan dengan kepatuhan maupun pelanggaran yang telah terbukti. Bab ini menggunakan tiga kategori konseptual: sesuai dengan aturan yang dapat diperiksa, tidak sesuai dengan aturan yang dapat diperiksa, dan belum dapat ditentukan karena bukti atau cakupan observasi tidak mencukupi. Perlakuan rinci terhadap kategori ketiga akan dirumuskan dalam analisis kebutuhan. Pemisahan status tersebut membantu menghindari penilaian yang terlalu pasti ketika antarmuka penyedia tidak menyediakan informasi yang dibutuhkan.
+
+\section{Ketentuan Regulasi yang Relevan}
+\label{sec:regulasi-residensi}
+\subsection{GDPR dan Transfer ke Negara Ketiga}
+GDPR tidak menetapkan larangan umum agar seluruh data pribadi selalu disimpan di dalam Uni Eropa. Bab V mengatur keberlanjutan pelindungan ketika data ditransfer ke negara ketiga atau organisasi internasional. Pedoman European Data Protection Board (EDPB) menjelaskan bahwa Pasal 44 merupakan prinsip umum transfer; Pasal 45 mengatur keputusan kecukupan; Pasal 46 mengatur jaminan yang sesuai; dan Pasal 49 menyediakan derogasi untuk keadaan tertentu dengan persyaratannya. Karena itu, pemeriksaan lokasi di luar kawasan yang dipilih tidak dengan sendirinya membuktikan bahwa semua transfer tersebut melanggar GDPR \autocite{edpb2023}.
+
+EDPB mengidentifikasi tiga kriteria kumulatif untuk transfer: pihak pengekspor tunduk pada GDPR untuk pemrosesan yang bersangkutan; data disampaikan atau disediakan kepada pengendali atau prosesor lain; dan pihak penerima berada di negara ketiga atau merupakan organisasi internasional. Pedoman tersebut menggunakan penyebutan Uni Eropa yang juga mencakup Wilayah Ekonomi Eropa. Akses jarak jauh dapat relevan terhadap penilaian transfer, tetapi perbedaan lokasi geografis saja tidak menggantikan pemeriksaan hubungan para pihak dan konteks pemrosesan. GDPR juga tidak semata-mata berlaku berdasarkan kewarganegaraan subjek data \autocite{edpb2023}.
+
+Implikasinya bagi aturan mesin adalah perlunya membedakan cakupan penerapan, lokasi, hubungan penerima, dan dasar transfer. Daftar \textit{region} yang diizinkan dapat digunakan sebagai kontrol teknis konservatif pada laboratorium, tetapi harus dinyatakan sebagai kebijakan operasional yang diturunkan untuk skenario tertentu. Daftar tersebut bukan representasi lengkap seluruh ketentuan GDPR. Bukti bahwa suatu kontrak atau instrumen transfer berlaku perlu ditelaah manusia; keberadaan label yang berisi nama instrumen hanya menyatakan adanya masukan administratif, bukan membuktikan keabsahannya.
+
+\subsection{UU Pelindungan Data Pribadi dan Urutan Persyaratan Transfer}
+Pasal 56 ayat (1) UU Nomor 27 Tahun 2022 membolehkan transfer kepada pengendali dan/atau prosesor di luar wilayah hukum Indonesia sesuai ketentuan undang-undang. Ayat (2) mewajibkan pengendali memastikan negara penerima mempunyai tingkat pelindungan yang setara atau lebih tinggi. Jika ketentuan tersebut tidak terpenuhi, ayat (3) mewajibkan adanya pelindungan yang memadai dan bersifat mengikat. Jika persyaratan ayat (2) dan ayat (3) tidak terpenuhi, ayat (4) mewajibkan persetujuan subjek data. Urutan tersebut perlu dipertahankan; ketiganya bukan pilihan bebas yang dapat ditukar tanpa memperhatikan kondisi sebelumnya \autocite[Pasal 56]{uupdp2022}.
+
+Untuk model pemeriksaan, informasi negara penerima dan rujukan bukti menjadi masukan yang berbeda dari lokasi sumber daya. Pemeriksa dapat memeriksa kelengkapan atribut dan konsistensi dengan keputusan administratif yang telah ditetapkan. Namun, pemeriksa tidak boleh mengarang status kecukupan pelindungan sebuah negara atau menganggap persetujuan sah hanya karena sebuah tag bernilai benar. Ketika dokumen pendukung tidak tersedia atau penilaiannya belum dilakukan, status yang tepat adalah memerlukan verifikasi lebih lanjut. Ini merupakan batas peran artefak teknis, bukan pengecualian terhadap kewajiban pengendali.
+
+Putusan Mahkamah Konstitusi Nomor 137/PUU-XXIII/2025, yang diucapkan pada 19 Januari 2026, menolak permohonan pemohon untuk seluruhnya. Pertimbangan Mahkamah membahas konstitusionalitas norma transfer pada Pasal 56 ayat (1) sampai dengan ayat (4). Amar tersebut tidak menetapkan bahwa keberadaan data pada suatu \textit{region} merupakan bukti tunggal kepatuhan ataupun memindahkan seluruh fungsi pengawasan kepada pengendali. Relevansinya bagi penelitian ini adalah bahwa mekanisme transfer bersyarat tetap perlu dihormati dalam penyusunan aturan operasional \autocite[hlm. 220--222]{mk2026}.
+
+\subsection{PP Nomor 71 Tahun 2019: Lingkup Publik dan Privat}
+Pasal 20 ayat (2) PP Nomor 71 Tahun 2019 mewajibkan Penyelenggara Sistem Elektronik (PSE) lingkup publik melakukan pengelolaan, pemrosesan, dan/atau penyimpanan sistem serta data elektronik di Indonesia. Akan tetapi, ayat (3) menyediakan pengecualian ketika teknologi penyimpanan tidak tersedia di dalam negeri. Ayat (4) mengatur bahwa kriteria kondisi tersebut ditentukan oleh komite yang melibatkan kementerian dan lembaga terkait. Dengan demikian, menyebut kewajiban tersebut sebagai larangan mutlak tanpa pengecualian tidak sesuai dengan susunan pasalnya \autocite[Pasal 20]{pp712019}.
+
+Pasal 21 mempunyai pengaturan berbeda bagi PSE lingkup privat: pengelolaan, pemrosesan, dan/atau penyimpanan dapat dilakukan di dalam dan/atau di luar Indonesia, dengan kewajiban terkait efektivitas pengawasan serta penegakan hukum dan pemberian akses yang diperlukan sesuai ketentuan. Karena itu, kategori penyelenggara harus ditetapkan sebelum aturan penempatan diterapkan. Aturan untuk lingkup publik tidak boleh diperluas menjadi larangan umum bagi seluruh organisasi privat \autocite[Pasal 21]{pp712019}.
+
+Dalam laboratorium, kebijakan penempatan di Indonesia dapat ditetapkan untuk skenario PSE publik tanpa pengecualian yang telah disetujui. Jika skenario mengandung pengecualian, pemeriksaan harus mempertahankan rujukan keputusan dan batas berlakunya sebagai masukan yang diverifikasi. Perangkat lunak tidak berwenang menyatakan sendiri bahwa teknologi tidak tersedia di dalam negeri. Dengan demikian, penilaian otomatis dibatasi pada konsistensi fakta konfigurasi terhadap kebijakan dan bukti yang diberikan.
+
+\subsection{Keterlacakan dari Ketentuan ke Aturan Teknis}
+Sintesis ketiga instrumen menunjukkan bahwa hubungan antara hukum dan lokasi tidak cukup direpresentasikan oleh satu daftar negara. Pemetaan perlu menyatakan siapa yang diatur, objek yang dicakup, kondisi pemicu, kewajiban atau larangan, pengecualian, serta bukti yang mendasarinya. Model tersebut merupakan pendekatan operasional yang diusulkan untuk dianalisis lebih lanjut, bukan klaim bahwa seluruh penafsiran hukum dapat diotomatisasi \autocite{edpb2023,uupdp2022,pp712019}.
+
+Sebagai contoh analitis, temuan dapat berbunyi ``replika teramati pada lokasi yang tidak sesuai dengan kebijakan penempatan untuk skenario ini''. Pernyataan itu lebih terbatas daripada ``organisasi pasti melanggar undang-undang''. Keterlacakan dapat dibangun melalui identitas ketentuan, versi aturan, metadata masukan, dan rujukan bukti. Validasi normatif dan penetapan kepatuhan menyeluruh tetap berada di luar kemampuan pemindaian konfigurasi semata.
+
+% Kajian berdasarkan dokumentasi primer; bukan keputusan arsitektur final.
+\section{Lokasi Penyimpanan, Replikasi, dan Pencadangan pada Layanan Awan}
+\label{sec:layanan-cloud}
+\label{sec:b2c-lokasi-cloud}
+
+\subsection{Lokasi Sumber Daya dan Cakupan Pengamatan}
+
+Pengamatan residensi data pada lingkungan \textit{multi-cloud} perlu membedakan lokasi sumber daya utama, lokasi replika, serta lokasi cadangan. Ketiganya tidak selalu identik. Dokumentasi Amazon S3 membedakan replikasi dalam satu \textit{region} dan lintas \textit{region}, sedangkan dokumentasi Azure Storage membedakan redundansi lokal, antarzona, dan geografis. Pada Cloud SQL, cadangan standar bahkan dapat ditempatkan secara bawaan pada \textit{multi-region} terdekat. Dengan demikian, pemeriksaan satu atribut lokasi sumber daya utama belum cukup untuk menyimpulkan bahwa semua salinan berada dalam wilayah yang diizinkan \autocite{b2c_awsS3Replication,b2c_azureStorageRedundancy,b2c_gcpSqlBackups}.
+
+Metadata antarmuka pemrograman memberikan bukti konfigurasi menurut penyedia, bukan pengukuran independen atas seluruh perpindahan fisik data. Google secara eksplisit membedakan pembatasan lokasi sumber daya dari komitmen lokasi penyimpanan data. Implikasinya, normalisasi perlu mempertahankan identitas penyedia, layanan, jenis lokasi, asal metadata, waktu pengambilan, dan keterbatasan pengamatan. Metadata yang tidak tersedia atau gagal dibaca sebaiknya dinyatakan belum dapat ditentukan, bukan langsung dianggap patuh. Penalaran tersebut membatasi kesimpulan penelitian pada konfigurasi yang teramati \autocite{b2c_gcpLocationConstraint}.
+
+\subsection{Amazon Web Services}
+
+Pada Amazon S3, operasi \texttt{HeadBucket} mengembalikan lokasi melalui \texttt{x-amz-\allowbreak bucket-\allowbreak region}. Dokumentasi terbaru merekomendasikan operasi tersebut untuk penemuan \textit{region}, bukan \texttt{GetBucketLocation}. Apabila operasi lama tetap digunakan, nilai \texttt{null} berarti \texttt{us-east-1}, sedangkan \texttt{EU} berarti \texttt{eu-west-1}; keduanya bukan metadata lokasi yang hilang. Konfigurasi replikasi perlu diperiksa terpisah karena S3 mendukung tujuan pada satu atau beberapa \textit{bucket}, baik dalam \textit{region} yang sama maupun berbeda. Lokasi setiap tujuan harus diselesaikan berdasarkan sumber daya tujuan, bukan ditebak dari nama \textit{bucket} \autocite{b2c_awsHeadBucket,b2c_awsS3Location,b2c_awsS3Replication}.
+
+Untuk basis data terkelola, Amazon RDS menyediakan metadata seperti \texttt{DB\allowbreak InstanceArn}, \texttt{AvailabilityZone}, identitas replika baca, dan daftar replikasi cadangan otomatis. RDS juga menyediakan replikasi \textit{snapshot} serta log transaksi ke \textit{region} tujuan. Dukungan fitur tersebut bergantung pada mesin, versi, dan pasangan wilayah. Status \textit{Multi-AZ} tidak boleh disamakan begitu saja dengan replikasi lintas \textit{region}. Oleh karena itu, inventaris instans, hubungan replika, dan cadangan merupakan objek pengamatan yang berbeda, meskipun berkaitan dengan basis data yang sama \autocite{b2c_awsRdsMetadata,b2c_awsRdsBackupReplication}.
+
+\subsection{Microsoft Azure}
+
+Pada Azure Blob Storage, lokasi dan redundansi terutama diamati melalui \textit{storage account}. API menyediakan \texttt{location}, \texttt{primaryLocation}, \texttt{secondaryLocation}, dan informasi SKU. Redundansi LRS serta ZRS mempertahankan salinan dalam \textit{region} utama, sedangkan GRS dan GZRS menambahkan salinan pada \textit{region} sekunder. Varian dengan akses baca tidak menghilangkan keberadaan salinan geografis tersebut. Dengan demikian, akun yang lokasi utamanya diizinkan masih memerlukan pemeriksaan jenis redundansi dan lokasi sekunder; lokasi grup sumber daya saja bukan pengganti pemeriksaan akun penyimpanan \autocite{b2c_azureStorageMetadata,b2c_azureStorageRedundancy}.
+
+Azure SQL Database memperlihatkan perbedaan antara lokasi basis data dan redundansi cadangannya. API membedakan \texttt{currentBackup\allowbreak StorageRedundancy} dari \texttt{requestedBackup\allowbreak StorageRedundancy}, sehingga nilai yang diminta belum tentu sama dengan keadaan yang sudah berlaku. Dokumentasi menyatakan bahwa cadangan basis data baru secara bawaan menggunakan redundansi geografis, tetapi pilihan lingkungan pengembangan pada portal dapat menetapkan redundansi lokal. Replikasi geografis aktif merupakan mekanisme lain yang menyalin data ke basis data sekunder. Perubahan redundansi cadangan berlaku untuk cadangan mendatang dan tidak otomatis memindahkan cadangan lama \autocite{b2c_azureSqlMetadata,b2c_azureSqlBackup,b2c_azureSqlGeoReplication}.
+
+\subsection{Google Cloud}
+
+Cloud Storage menyediakan lokasi \textit{region}, \textit{dual-region}, dan \textit{multi-region}; layanan khusus juga menyediakan lokasi zonal. Metadata \texttt{location} perlu dibaca bersama \texttt{locationType}. Untuk \textit{dual-region} yang dapat dikonfigurasi, \texttt{customPlacementConfig.\allowbreak dataLocations} menjelaskan pasangan wilayah penyusunnya. Kode kawasan luas tidak dapat diperlakukan sebagai satu negara. Sebagai contoh, dokumentasi menyebutkan bahwa \texttt{ASIA} justru mengecualikan Indonesia dan Hong Kong. Hal ini menunjukkan bahwa pencocokan awalan nama lokasi tidak memadai untuk menilai residensi tingkat negara \autocite{b2c_gcpBucketLocations,b2c_gcpBucketMetadata}.
+
+Pada Cloud SQL, atribut \texttt{region}, \texttt{gceZone}, dan hubungan replika membantu mengenali penempatan instans serta keterkaitannya. Replika baca lintas \textit{region} tersedia, tetapi berbeda dari mekanisme ketersediaan tinggi antarzona. Cadangan standar dan cadangan yang dikelola melalui Backup and DR mempunyai model konfigurasi berbeda. Untuk cadangan standar, lokasi khusus dapat dipilih; jika tidak ditentukan, lokasi bawaan dapat berupa \textit{multi-region} terdekat. Perubahan lokasi cadangan tidak memindahkan cadangan yang telah ada. Oleh sebab itu, satu atribut lokasi instans tidak mencakup seluruh konfigurasi perlindungan datanya \autocite{b2c_gcpSqlMetadata,b2c_gcpSqlCrossRegion,b2c_gcpSqlBackups}.
+
+Tabel~\ref{tab:b2-lokasi-layanan} merangkum perbedaan tingkat pengamatan pada layanan yang dikaji. Tabel ini adalah sintesis dokumentasi penyedia, bukan pernyataan bahwa seluruh antarmuka tersebut telah diimplementasikan dalam tugas akhir.
+\begingroup
+\small
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{4pt}
+\begin{table}[tbp]
+\centering
+\caption{Perbedaan objek pengamatan lokasi data antarlayanan}\label{tab:b2-lokasi-layanan}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.19\textwidth}>{\raggedright\arraybackslash}p{0.36\textwidth}>{\raggedright\arraybackslash}p{0.39\textwidth}@{}}
+\toprule
+Layanan & Informasi lokasi utama & Pemeriksaan tambahan \\
+\midrule
+Amazon S3 & \texttt{x-amz-\allowbreak bucket-\allowbreak region} melalui \texttt{HeadBucket} & Tujuan konfigurasi replikasi dan lokasi \textit{bucket} tujuan \autocite{b2c_awsHeadBucket,b2c_awsS3Replication}. \\
+\addlinespace
+Amazon RDS & Identitas instans, ARN, dan zona ketersediaan & Hubungan replika dan replikasi cadangan otomatis \autocite{b2c_awsRdsMetadata,b2c_awsRdsBackupReplication}. \\
+\addlinespace
+Azure Blob Storage & Lokasi utama akun penyimpanan & SKU redundansi dan lokasi sekunder \autocite{b2c_azureStorageMetadata,b2c_azureStorageRedundancy}. \\
+\addlinespace
+Azure SQL Database & Lokasi sumber daya basis data & Redundansi cadangan yang berlaku, bukan hanya yang diminta; relasi replika geografis \autocite{b2c_azureSqlMetadata,b2c_azureSqlBackup,b2c_azureSqlGeoReplication}. \\
+\addlinespace
+Cloud Storage & \texttt{location} dan \texttt{locationType} & Wilayah penyusun \textit{dual-region} yang dapat dikonfigurasi \autocite{b2c_gcpBucketMetadata,b2c_gcpBucketLocations}. \\
+\addlinespace
+Cloud SQL & \texttt{region} dan hubungan replika & Lokasi cadangan sesuai jenis cadangan yang digunakan \autocite{b2c_gcpSqlMetadata,b2c_gcpSqlBackups}. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\endgroup
+
+
+\section{Policy as Code dan Alternatif Penegakan}
+\label{sec:b2c-policy-code}
+
+\subsection{Pemisahan Keputusan dan Pelaksanaan}
+
+\textit{Policy as code} memungkinkan aturan diperlakukan sebagai artefak yang dapat diperiksa, dikelola versinya, dan diuji. Namun, mesin keputusan tidak identik dengan sistem pengelolaan awan yang lengkap. OPA memisahkan pengambilan keputusan dari penegakan: aplikasi memberikan masukan terstruktur, kemudian menerima hasil evaluasi. Karena itu, penggunaan OPA tidak otomatis menyediakan pengumpul metadata AWS, Azure, dan GCP, penjadwal pemindaian, ataupun pelaksana remediasi. Komponen integrasi tetap diperlukan untuk menyediakan masukan yang benar dan menjalankan tindakan yang telah diotorisasi \autocite{b2c_opaOverview}.
+
+OPA menggunakan Rego dan menyediakan pengujian kebijakan melalui \texttt{opa test}. Fasilitas tersebut berguna untuk menguji kasus lokasi yang diizinkan, tujuan replikasi terlarang, atau masukan tidak lengkap secara terpisah dari akun awan. Meskipun demikian, kemudahan pengujian mesin keputusan tidak membuktikan kelengkapan pengumpulan metadata. Dalam konteks mahasiswa, kebutuhan mempelajari Rego dan mengintegrasikan proses evaluasi perlu dibandingkan dengan manfaat pemisahan aturan dari kode aplikasi. Penilaian ini merupakan analisis konseptual, bukan hasil pengukuran waktu implementasi \autocite{b2c_opaOverview,b2c_opaTesting}.
+
+Gambar~\ref{fig:b2-pemeriksaan-konseptual} memperlihatkan hubungan konseptual antara bukti, konteks, dan keputusan. Diagram ini menyintesis perbedaan metadata lokasi serta pemisahan keputusan dan penegakan, bukan menetapkan arsitektur implementasi akhir \autocite{b2c_gcpLocationConstraint,b2c_opaOverview}.
+\begin{figure}[tb]
+\centering
+\small
+\begin{tabular}{@{}ccc@{}}
+\fbox{\parbox[c][0.9cm][c]{0.26\textwidth}{\centering Metadata\\AWS}} &
+\fbox{\parbox[c][0.9cm][c]{0.26\textwidth}{\centering Metadata\\Azure}} &
+\fbox{\parbox[c][0.9cm][c]{0.26\textwidth}{\centering Metadata\\GCP}} \\
+\multicolumn{3}{c}{$\downarrow$} \\
+\multicolumn{3}{c}{\fbox{\parbox{0.85\textwidth}{\centering Penyamaan representasi lokasi, sumber, dan waktu pengamatan}}} \\
+\multicolumn{3}{c}{$\downarrow$} \\
+\multicolumn{3}{c}{\fbox{\parbox{0.85\textwidth}{\centering Evaluasi aturan dengan kategori data, konteks transfer, dan bukti pendukung}}} \\
+\multicolumn{3}{c}{$\downarrow$} \\
+\multicolumn{3}{c}{\fbox{\parbox{0.85\textwidth}{\centering Keputusan yang dapat ditelusuri; informasi yang belum diketahui tetap dinyatakan}}} \\
+\multicolumn{3}{c}{$\downarrow$} \\
+\multicolumn{3}{c}{\fbox{\parbox{0.85\textwidth}{\centering Pencatatan bukti dan tindak lanjut sesuai kewenangan}}}
+\end{tabular}
+\caption{Hubungan konseptual bukti konfigurasi, konteks kebijakan, dan keputusan pemeriksaan}
+\label{fig:b2-pemeriksaan-konseptual}
+\end{figure}
+
+
+\subsection{Cloud Custodian dan Kontrol Bawaan}
+
+Cloud Custodian menawarkan kebijakan YAML dengan tipe sumber daya, penyaring, tindakan, serta mode eksekusi. Berbeda dari OPA inti, perangkat ini menyediakan integrasi pengambilan sumber daya dan tindakan tertentu, termasuk eksekusi berkala serta \textit{dry run} \autocite{b2c_custodianOverview}. Akan tetapi, dukungan tiga penyedia tidak berarti keseragaman kemampuan. Dokumentasi \texttt{aws.s3} memuat tindakan \texttt{set-replication}, sedangkan daftar tindakan \texttt{azure.storage} dan \texttt{gcp.bucket} berbeda. Satu berkas YAML dapat memuat beberapa kebijakan spesifik penyedia, tetapi hal itu tidak otomatis menghasilkan satu aturan residensi yang semantik dan tindakannya sama pada seluruh platform \autocite{b2c_custodianS3,b2c_custodianAzureStorage,b2c_custodianGcpBucket}.
+
+Kontrol bawaan memberi penegakan dekat dengan API penyedia, tetapi batasannya perlu dibaca secara khusus. Pada AWS, \texttt{aws:RequestedRegion} membatasi titik akhir yang dipanggil, bukan seluruh dampak lintas wilayah suatu operasi. Pada Azure, kebijakan \textit{Allowed locations} mempunyai pengecualian dan tidak menggantikan pemeriksaan redundansi cadangan. Pada Google Cloud, \texttt{gcp.resourceLocations} terutama membatasi pembuatan sumber daya yang didukung, bukan otomatis memperbaiki sumber daya lama. Pilihan ini berguna sebagai pembanding preventif, tetapi tidak dapat diasumsikan menghasilkan inventaris residensi lintas awan yang seragam \autocite{b2c_awsRegionCondition,b2c_azurePolicyLocations,b2c_gcpLocationConstraint}.
+
+\subsection{Alternatif Python dan YAML untuk Laboratorium}
+
+Alternatif sederhana adalah evaluator Python dengan parameter kebijakan YAML. Untuk aturan terbatas berupa keanggotaan lokasi dalam daftar izin dan pemeriksaan tujuan salinan, pendekatan ini secara konseptual mengurangi kebutuhan bahasa kebijakan tambahan. Namun, YAML hanyalah representasi data; validasi skema, prioritas aturan, penanganan nilai tidak diketahui, pengujian, dan pelaporan harus dikembangkan sendiri. Dokumentasi PyYAML juga mengingatkan agar masukan tidak tepercaya tidak dimuat dengan pemuat yang dapat membentuk objek Python arbitrer; \texttt{safe\_load} membatasi kemampuan tersebut. Sifat sederhana tidak menghapus kebutuhan pengamanan masukan \autocite{b2c_pyyamlDocs}.
+
+Perbandingan untuk tugas akhir sebaiknya menilai beban integrasi, kemampuan pengujian, cakupan layanan sasaran, hak akses, dan keterlacakan keputusan. Secara analitis, Python dengan YAML dapat menjadi pembanding implementasi minimum; OPA menawarkan pemisahan keputusan dan pengujian khusus; Cloud Custodian mengurangi kode integrasi apabila tindakan yang diperlukan tersedia; kontrol bawaan menyediakan pembatasan khusus penyedia. Tidak ada dasar dari dokumentasi ini untuk menyatakan satu alternatif pasti paling mudah pada semua skenario. Pemilihan akhir memerlukan pembuktian konsep terbatas pada Bab III, bukan ditetapkan dalam kajian ini \autocite{b2c_opaOverview,b2c_opaTesting,b2c_custodianOverview}.
+
+Tabel~\ref{tab:b2-kandidat} menyajikan implikasi pemilihan kandidat dari sudut beban pengerjaan. Penilaian ini merupakan sintesis dokumentasi, bukan skor kegunaan atau pengukuran produktivitas. Untuk pengguna yang belum menguasai Rego, evaluator terbatas berbasis Python dan YAML layak dimasukkan dalam pembuktian konsep awal; pilihan tersebut tetap perlu diuji terhadap kebutuhan pemeliharaan dan keterlacakan.
+\begingroup
+\small
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{4pt}
+\begin{table}[tbp]
+\centering
+\caption{Perbandingan konseptual kandidat mekanisme kebijakan}\label{tab:b2-kandidat}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.18\textwidth}>{\raggedright\arraybackslash}p{0.34\textwidth}>{\raggedright\arraybackslash}p{0.42\textwidth}@{}}
+\toprule
+Kandidat & Komponen yang dapat digunakan & Beban yang masih perlu dibuktikan \\
+\midrule
+OPA & Evaluasi kebijakan Rego, pengujian, dan pencatatan keputusan & Pembelajaran Rego; pengumpul metadata dan pelaksana tindakan tetap perlu diintegrasikan \autocite{b2c_opaOverview,b2c_opaTesting}. \\
+\addlinespace
+Cloud Custodian & Penemuan sumber daya, penyaring, dan tindakan yang didukung tiap penyedia & Verifikasi kesetaraan penyaring dan tindakan untuk setiap layanan sasaran; abstraksi residensi bersama tidak otomatis tersedia \autocite{b2c_custodianOverview,b2c_custodianS3,b2c_custodianGcpBucket}. \\
+\addlinespace
+Kontrol bawaan & Pembatasan atau remediasi khusus penyedia & Aturan dan bukti lintas penyedia perlu diselaraskan; pembatasan titik akhir atau pembuatan sumber daya bukan jaminan seluruh salinan data \autocite{b2c_awsRegionCondition,b2c_azurePolicyLocations,b2c_gcpLocationConstraint}. \\
+\addlinespace
+Python dan YAML & Bahasa pemrograman umum dan format parameter kebijakan & Skema, semantik aturan, pengujian, penanganan ketidakpastian, serta pengamanan pemuatan YAML perlu dibuat sendiri \autocite{b2c_pyyamlDocs}. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\endgroup
+
+\section{Remediasi dan Bukti Audit}
+\label{sec:b2c-remediasi-audit}
+
+\subsection{Batas Tindakan Korektif}
+
+Remediasi perlu dibedakan antara perubahan konfigurasi, penghentian penyalinan berikutnya, dan pemulihan atas salinan yang sudah terbentuk. AWS Config menjalankan remediasi melalui dokumen Automation milik Systems Manager. Azure Policy menggunakan tugas remediasi untuk efek \texttt{modify} atau \texttt{deployIfNotExists} dengan identitas terkelola dan hak akses yang sesuai \autocite{b2c_awsConfigRemediation,b2c_azurePolicyRemediation}. Mekanisme tersebut tidak membuktikan bahwa pemindahan basis data atau penghapusan seluruh salinan dapat dilakukan otomatis pada setiap layanan. Perubahan pengaturan cadangan Azure SQL dan Cloud SQL yang meninggalkan cadangan lama memperjelas perlunya pemeriksaan pascatindakan \autocite{b2c_azureSqlBackup,b2c_gcpSqlBackups}.
+
+Untuk laboratorium terbatas, tindakan perlu dikelompokkan berdasarkan risiko dan dukungan API. Pemberian penanda temuan tidak sama dengan memperbaiki lokasi data, sedangkan penghentian replikasi hanya dapat dinyatakan berhasil sesuai dampak yang benar-benar diverifikasi. Penilaian keberhasilan sebaiknya memakai keadaan sebelum tindakan, hasil permintaan API, dan pembacaan ulang konfigurasi. Pada skenario \textit{region} logis, perubahan label hanya membuktikan perilaku alur deteksi dan remediasi tersimulasi, bukan perpindahan fisik, penghapusan replika lintas negara, atau pemulihan produksi. Pembatasan ini menjaga kesesuaian antara ruang lingkup laboratorium dan kekuatan klaim penelitian.
+
+\subsection{Integritas, imutabilitas, dan kelengkapan}
+
+Jejak audit membutuhkan lebih dari hasil patuh atau melanggar. Catatan ideal memuat identitas sumber daya, metadata masukan, waktu pengamatan, identitas serta versi kebijakan, rujukan ketentuan, keputusan, tindakan, dan hasil verifikasi. OPA menyediakan \textit{decision logs} yang memuat masukan, hasil, dan metadata bundel, tetapi penyimpanan serta perlindungannya masih perlu diatur. Dokumentasinya juga mengizinkan penyamaran data sensitif dan menjelaskan bahwa pembatasan laju dapat membuang kejadian. Karena itu, mengaktifkan pencatatan tidak dengan sendirinya menjamin kelengkapan kronologis maupun penyimpanan yang tidak dapat diubah \autocite{b2c_opaDecisionLogs}.
+
+Hash kriptografis berbeda dari penyimpanan \textit{write once, read many} (WORM). Fungsi hash menghasilkan ringkasan untuk memeriksa kesesuaian data, sedangkan WORM membatasi perubahan atau penghapusan selama retensi. Secara konseptual, hash yang disimpan bersama berkas yang sama-sama dapat ditulis ulang tidak mencegah penggantian keduanya. S3 Object Lock membedakan mode tata kelola dan kepatuhan; Azure membedakan kebijakan retensi terkunci dan belum terkunci; Bucket Lock Google membatasi pengurangan atau penghapusan retensi setelah dikunci \autocite{b2c_awsObjectLock,b2c_azureImmutable,b2c_gcpBucketLock}. Oleh karena itu, hash atau rantai hash tidak boleh disebut setara dengan WORM, dan pengujian audit harus membedakan deteksi perubahan dari pencegahannya \autocite{b2c_pythonHashlib}.
+
+\section{Penelitian dan Solusi Terkait}
+\label{sec:penelitian-terkait}
+\subsection{Kajian Adopsi Kebijakan dan Pemeriksaan Berkelanjutan}
+\textcite{foalem2026} menganalisis 399 repositori GitHub yang menggunakan sembilan perkakas \textit{policy as code}. Pada analisis berbasis jumlah berkas, OPA mencakup 62\% berkas kebijakan dalam korpus yang dianalisis. Angka tersebut tidak sama dengan proporsi organisasi atau repositori yang menggunakan OPA; pada analisis tingkat repositori, artikel melaporkan 29\%. Pembedaan unit analisis penting agar popularitas suatu alat tidak diperlakukan sebagai bukti keunggulan akurasi atau kemudahan implementasi. Studi tersebut juga melaporkan bahwa 85,24\% repositori memakai satu perkakas. Temuan ini menunjukkan pola penggunaan dalam sampel, tetapi tidak membuktikan bahwa perkakas-perkakasnya tidak dapat saling diintegrasikan.
+
+Kajian \textcite{verdet2025} menganalisis 812 proyek sumber terbuka melalui pemeriksaan statis konfigurasi Terraform menggunakan Checkov dan Tfsec. Abstrak penerbit menyatakan bahwa kebijakan akses merupakan kategori yang paling banyak diterapkan, sedangkan enkripsi saat tersimpan merupakan kategori yang paling sering diabaikan. Penelitian itu mendukung kebutuhan pemeriksaan kebijakan yang eksplisit karena penggunaan \textit{infrastructure as code} tidak otomatis mencegah konfigurasi berisiko. Namun, objek yang diperiksa adalah konfigurasi Terraform, bukan inventaris lengkap sumber daya yang sedang berjalan. Dengan demikian, hasilnya tidak dapat langsung dijadikan ukuran ketepatan deteksi residensi pada layanan terkelola. Pembahasan di sini dibatasi pada metode dan temuan yang tersedia pada abstrak penerbit; rincian hasil yang tidak dapat diakses tidak digunakan untuk klaim tambahan.
+
+\textcite{kellogg2020} mengusulkan \textit{continuous compliance} untuk mempertahankan pemenuhan kontrol pada setiap perubahan kode dengan verifikasi ringan. Contoh kontrolnya meliputi penggunaan algoritma kriptografis, panjang kunci, kredensial tertanam, HTTPS, dan pembatasan akses tulis pada penyimpanan awan. Kontribusi yang relevan adalah pengaitan pemeriksaan berulang dengan kontrol yang dapat diuji. Akan tetapi, pemeriksaan perubahan kode mempunyai titik observasi berbeda dari pemindaian konfigurasi layanan setelah penyediaan. Penelitian tugas akhir ini mengambil prinsip pengujian yang dapat diulang tanpa menyatakan bahwa kontrol dan metode verifikasinya identik.
+
+\subsection{Penegakan Persyaratan Penyimpanan dan Pembuktian Lokasi}
+PRADA, yang diperkenalkan oleh \textcite{prada2020}, menambahkan lapisan penanganan data pada sistem penyimpanan berbasis pasangan kunci--nilai. Klien dapat menyatakan persyaratan penanganan data, kemudian lapisan tersebut membantu operator memenuhi persyaratan itu. Implementasinya menggunakan Cassandra. Penelitian tersebut memperlihatkan pendekatan penegakan yang bekerja dekat dengan penempatan data, berbeda dari pemeriksaan eksternal melalui metadata API. Untuk tugas akhir ini, perbedaannya terletak pada tingkat kendali: layanan terkelola tidak selalu memberikan akses untuk mengubah lapisan penyimpanan internal. Rujukan yang dibaca adalah versi prapublikasi kedua; status versi tersebut dipertahankan dalam daftar pustaka.
+
+\textcite{abbas2023} mengusulkan penegakan kebijakan geolokasi menggunakan mekanisme \textit{trusted computing}. Host dan geolokasinya diatestasi sebelum kunci dekripsi dilekatkan pada Trusted Platform Module (TPM) host yang memenuhi persyaratan. Pendekatan ini menyoroti bahwa mempercayai metadata administratif dan membuktikan keadaan host merupakan dua model kepercayaan yang berbeda. Tugas akhir ini tidak mengimplementasikan atestasi host penyedia; karena itu, pembacaan metadata lokasi tidak boleh dipresentasikan sebagai bukti independen yang setara. Kajian tersebut digunakan untuk memperjelas batas jaminan, bukan untuk menjanjikan penerapan mekanisme TPM pada seluruh layanan terkelola.
+
+GDPRuler pada \textcite{gdpruler2026} menggunakan perantara tepercaya untuk penyimpanan pasangan kunci--nilai. Artikel prapublikasi tersebut menjelaskan monitor di dalam mesin virtual rahasia, pengelolaan metadata kepatuhan, dan pencatatan audit yang memungkinkan deteksi perubahan. Implementasinya menggunakan proksi untuk Redis dan RocksDB tanpa memodifikasi basis kode keduanya. Relevansinya adalah penggabungan evaluasi kebijakan dengan perlindungan integritas mekanisme kepatuhan. Walaupun memakai istilah GDPR, cakupan penegakannya tidak boleh diperlakukan sebagai sertifikasi kepatuhan menyeluruh. Model perantara pada lalu lintas operasi data juga berbeda dari pemindaian inventaris konfigurasi AWS, Azure, dan GCP yang menjadi lingkup tugas akhir ini.
+
+\subsection{Sintesis Perbandingan dan Posisi Penelitian}
+Tabel~\ref{tab:b2-literatur} merangkum kontribusi dan perbedaan fokus penelitian yang ditelaah. Kolom perbedaan menyatakan batas perbandingan terhadap ruang lingkup tugas akhir, bukan menyatakan bahwa penelitian terdahulu gagal menyelesaikan tujuan aslinya.
+\begingroup
+\small
+\setlength{\parskip}{0pt}
+\setlength{\tabcolsep}{4pt}
+\begin{table}[tbp]
+\centering
+\caption{Sintesis penelitian terkait dan perbedaannya terhadap ruang lingkup tugas akhir}\label{tab:b2-literatur}
+\begin{tabular}{@{}>{\raggedright\arraybackslash}p{0.23\textwidth}>{\raggedright\arraybackslash}p{0.33\textwidth}>{\raggedright\arraybackslash}p{0.38\textwidth}@{}}
+\toprule
+Penelitian & Kontribusi utama & Perbedaan fokus yang relevan \\
+\midrule
+\textcite{foalem2026} & Kajian empiris penggunaan perkakas dan tujuan kebijakan pada 399 repositori. & Mengkaji praktik adopsi, bukan mengevaluasi artefak deteksi residensi lintas penyedia. \\
+\addlinespace
+\textcite{verdet2025} & Analisis statis kebijakan keamanan Terraform pada 812 proyek. & Fokus pada berkas konfigurasi; tidak setara dengan observasi keadaan layanan yang sedang berjalan. \\
+\addlinespace
+\textcite{kellogg2020} & Verifikasi kontrol kepatuhan pada setiap perubahan kode. & Titik pemeriksaannya perubahan kode, bukan lokasi seluruh replika dan cadangan layanan terkelola. \\
+\addlinespace
+\textcite{prada2020} & Lapisan penanganan data dengan persyaratan klien pada Cassandra. & Memerlukan kendali lapisan penyimpanan; berbeda dari penggunaan API penyedia sebagai pengamat eksternal. \\
+\addlinespace
+\textcite{abbas2023} & Penegakan geolokasi berbasis atestasi host dan TPM. & Model kepercayaan berbeda dari penerimaan metadata lokasi yang dilaporkan penyedia. \\
+\addlinespace
+\textcite{gdpruler2026} & Perantara tepercaya, aturan deklaratif, dan audit yang mendeteksi perubahan pada KVS. & Fokus pada operasi penyimpanan melalui proksi, bukan inventaris konfigurasi enam layanan sasaran. \\
+\bottomrule
+\end{tabular}
+\end{table}
+\endgroup
+
+Berdasarkan sintesis tersebut, persoalan tugas akhir bukan membuktikan bahwa kebijakan deklaratif, pemantauan berulang, atau audit kepatuhan belum pernah dibuat. Ketiganya telah mempunyai landasan penelitian. Fokus yang akan dianalisis adalah integrasi aturan operasional yang dapat ditelusuri ke ketentuan, normalisasi konfigurasi beberapa penyedia, penanganan informasi yang belum diketahui, serta bukti pemeriksaan pada laboratorium terbatas. Posisi ini merupakan pembatasan ruang lingkup terhadap sumber yang ditelaah, bukan klaim kebaruan universal.
+
+Kajian juga menunjukkan perlunya memisahkan empat dimensi evaluasi: ketepatan keputusan aturan, kelengkapan metadata, keberhasilan tindakan korektif, dan kekuatan perlindungan bukti. Aturan yang benar masih dapat menerima masukan tidak lengkap; tindakan API yang berhasil belum tentu menghapus salinan lama; sedangkan hash yang cocok tidak membuktikan bahwa penghapusan catatan tidak pernah terjadi. Hubungan antardimensi ini menjadi dasar analisis kebutuhan dan pemilihan alternatif pada Bab~\ref{chap:analisis-masalah}.
+
+Untuk pemilihan teknologi, penelitian adopsi hanya memberi konteks, sedangkan dokumentasi teknis menjelaskan kemampuan yang tersedia. Kemudahan pengerjaan bagi penulis perlu dibuktikan melalui percobaan kecil dengan kasus dan keluaran yang sama. Kandidat yang membutuhkan sedikit kode integrasi belum tentu membutuhkan sedikit pembelajaran; sebaliknya, evaluator buatan sendiri dapat mudah dimulai tetapi memerlukan disiplin pengujian lebih besar. Oleh karena itu, Bab II mempertahankan beberapa alternatif dan tidak mengubah pilihan yang belum diuji menjadi keputusan arsitektur final.
